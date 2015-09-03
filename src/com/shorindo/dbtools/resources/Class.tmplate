@@ -1,0 +1,20 @@
+/*
+ *
+ */
+ package ${package};
+ 
+ public class ${class} {
+     #foreach ${memberList}
+     private ${typeName} ${memberName};
+     #end
+
+     #foreach ${memberList}
+     public ${typeName} ${getterName}() {
+         return ${memberName};
+     }
+     public void ${setterName}(${typeName} ${memberName}) {
+         this.${memberName} = ${memberName};
+     }
+     #end
+ }
+ 

@@ -20,6 +20,8 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 
@@ -34,13 +36,13 @@ public class BeanGenerator extends Connector {
             ResultSet rset = meta.getTables(null, null, null, null);
             while (rset.next()) {
                 String tableName = rset.getString("TABLE_NAME");
-                BeanClass beanClass = new BeanClass(packageName, getBeanName(tableName, true));
+                BeanClass beanClass = new BeanClass(packageName, tableName);
                 ResultSet cset = meta.getColumns(null, null, tableName, null);
                 while (cset.next()) {
-                    LOG.debug(getBeanName(cset.getString("COLUMN_NAME"), false));
+                    beanClass.addMember(cset.getString("TYPE_NAME"), cset.getString("COLUMN_NAME"));
                 }
                 cset.close();
-                LOG.debug(beanClass.toString());
+                LOG.debug(beanClass.getSource());
             }
             rset.close();
             conn.close();
@@ -64,32 +66,52 @@ public class BeanGenerator extends Connector {
     
     protected static class BeanClass {
         private String packageName;
+        private String tableName;
         private String className;
-        public BeanClass(String packageName, String className) {
+        private List<BeanMember> memberList = new ArrayList<BeanMember>();
+
+        public BeanClass(String packageName, String tableName) {
             this.packageName = packageName;
-            this.className = className;
+            this.tableName = tableName;
+            this.className = getBeanName(tableName, true);
         }
-        public void addMember(Class<?> clazz, String memberName) {
-            
+        public void addMember(String typeName, String memberName) {
+            memberList.add(new BeanMember(typeName, memberName));
         }
-        public String toString() {
-            return
-                "package " + packageName + ";\n" +
-                "\n" +
-                "public class " + className + " {\n" +
-                "}\n";
+        public String getSource() {
+            StringBuffer sb = new StringBuffer();
+            sb.append("package " + packageName + ";\n");
+            sb.append("\n");
+            sb.append("public class " + className + " {\n");
+            for (BeanMember member : memberList) {
+                sb.append(member.getDeclare());
+            }
+            sb.append("}\n");
+            return sb.toString();
         }
     }
     
     protected static class BeanMember {
-        private Class<?> clazz;
+        private String typeName;
+        private String className;
+        private String columnName;
         private String memberName;
-        public BeanMember(Class<?> clazz, String memberName) {
-            this.clazz = clazz;
-            this.memberName = memberName;
+        public BeanMember(String typeName, String columnName) {
+            this.typeName = typeName;
+            this.columnName = columnName;
+            this.memberName = getBeanName(columnName, false);
         }
-        public String toString() {
-            return "private " + clazz.getSimpleName() + " " + memberName + ";\n";
+        public String getTypeName() {
+            return typeName;
+        }
+        public String getColumnName() {
+            return columnName;
+        }
+        public String getMemberName() {
+            return memberName;
+        }
+        public String getDeclare() {
+            return "    private " + typeName + " " + memberName + ";\n";
         }
     }
 }

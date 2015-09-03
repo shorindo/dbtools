@@ -15,22 +15,11 @@
  */
 package com.shorindo.dbtools;
 
-import static org.junit.Assert.*;
-
-import java.io.File;
-
-import org.junit.Test;
-
-import com.shorindo.dbtools.BeanGenerator;
-
 /**
  * 
  */
-public class BenGeneratorTest {
-
-    @Test
-    public void testCreate() {
-        BeanGenerator.create("com.shorindo.sample", new File("generated"));
-    }
-
+public interface Command {
+    public String getName();
+    public String getUsage();
+    public String getOptions();
 }

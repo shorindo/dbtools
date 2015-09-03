@@ -15,6 +15,8 @@
  */
 package com.shorindo.dbtools;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -28,7 +30,7 @@ import java.util.Properties;
 public abstract class Connector {
     protected static Connection getConnection() throws SQLException {
         try {
-            InputStream is = Connector.class.getResourceAsStream("db.properties");
+            InputStream is = new FileInputStream(new File("dbtools.properties"));
             Properties props = new Properties();
             props.load(is);
             is.close();

@@ -1,0 +1,5 @@
+driver.className = com.mysql.jdbc.Driver
+driver.url = jdbc:mysql://<host>:<port>/<dbname>
+driver.user = <dbuser>
+driver.pass = <dbpass>
+
