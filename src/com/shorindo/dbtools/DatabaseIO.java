@@ -17,7 +17,6 @@ package com.shorindo.dbtools;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
@@ -36,6 +35,7 @@ import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
 
 /**
  * 
@@ -51,7 +51,7 @@ public class DatabaseIO extends Connector {
     public static void main(String args[]) {
         try {
             DatabaseIO dbio = new DatabaseIO();
-            dbio.exportToXls(new File("data/sample_XXX.xls"));
+            //dbio.exportToXls(new File("data/sample_XXX.xls"));
             dbio.importFromXls(new File("data/sample.xls"));
         } catch (Exception e) {
             e.printStackTrace();
@@ -76,6 +76,33 @@ public class DatabaseIO extends Connector {
             e.printStackTrace();
         }
     }
+    public int sql(String sql, Object...params) throws SQLException {
+        Connection conn = null;
+        int result = 0;
+        try {
+            conn = getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            for (int i = 0; i < params.length; i++) {
+                stmt.setObject(i + 1, params[i]);
+            }
+            result = stmt.executeUpdate();
+            stmt.close();
+        } finally {
+            if (conn != null)
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+        }
+        return result;
+    }
+    public <T>T queryForObject(Class<T> resultClass, String sql, Object...params) throws SQLException {
+        return null;
+    }
+    public <T> List<T> queryForList(Class<T> resultClass, String sql, Object...params) throws SQLException {
+        return null;
+    }
     public void importFromXls(File xls)throws IOException, SQLException {
         Connection conn = getConnection();
         info("File:" + xls.getName());
@@ -84,8 +111,9 @@ public class DatabaseIO extends Connector {
         for (int i = 0; i < book.getNumberOfSheets(); i++) {
             HSSFSheet sheet = book.getSheetAt(i);
             String tableName = sheet.getSheetName();
+            //TableMeta tableMeta = new TableMeta(conn, tableName);
             info("Sheet:" + tableName);
-            TableMeta tableMeta = new TableMeta(conn, tableName);
+
             HSSFRow row = sheet.getRow(HEADER_ROW);
             int colNum = START_COL;
             boolean hasCol = true;
@@ -127,7 +155,14 @@ public class DatabaseIO extends Connector {
                     //println(cell.getStringCellValue());
                     switch (cell.getCellType()) {
                     case HSSFCell.CELL_TYPE_NUMERIC:
-                        stmt.setDouble(j + 1, row.getCell(j).getNumericCellValue());
+                        if (NULL_EXPR.equals(cell.getStringCellValue())) {
+                            stmt.setObject(j + 1,  null);
+                        } else
+                        if (DateUtil.isCellDateFormatted(cell)) {
+                            stmt.setDate(j + 1, new java.sql.Date(cell.getDateCellValue().getTime()));
+                        } else {
+                            stmt.setDouble(j + 1, row.getCell(j).getNumericCellValue());
+                        }
                         break;
                     default:
                         String cellValue = row.getCell(j).getStringCellValue();
@@ -141,7 +176,8 @@ public class DatabaseIO extends Connector {
                 stmt.close();
             }
         }
-        
+
+        book.close();
         if (conn != null)
             try {
                 conn.close();
